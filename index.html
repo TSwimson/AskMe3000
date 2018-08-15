@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AskMe3000</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      text-align: center;
+      background: #f2f2f2;
+      padding-top: 160px;
+      color: #333333;
+    }
+    .timer {
+      font-size: 3em;
+    }
+    .question {
+      font-size: 2em;
+      padding-left: 20px;
+      padding-right: 20px;
+      padding-bottom: 20px;
+    }
+    .button-success,
+    .button-default {
+        text-align:center;
+        text-decoration: none;
+        font-family: sans-serif;
+        -webkit-font-smoothing: antialiased;
+        font-size: 150%;
+        color: #fff;
+        background: #f2f2f2;
+        padding: 20px 60px;
+        display: inline-block;
+        white-space: nowrap;
+        -webkit-border-radius: 5px;
+        -moz-border-radius: 5px;
+        border-radius: 5px;
+        margin: 10px 0;
+        -webkit-transition: all 0.2s ease-in-out;
+        -ms-transition: all 0.2s ease-in-out;
+        -moz-transition: all 0.2s ease-in-out;
+        -o-transition: all 0.2s ease-in-out;
+        transition: all 0.2s ease-in-out;
+        margin: 20px;
+    }
+
+    .button-default {
+      color: #333333;
+    }
+
+    .button-default:hover {
+      background: #909090;
+    }
+
+    .button-success {
+        background: rgb(28, 184, 65);
+    }
+
+    .button-success:hover {
+      background: rgb(16, 115, 33);
+    }
+  </style>
+
+  <script type="text/javascript">
+    var AskMe3000 = {
+      constants: {
+        stop:              120,
+        great:             90,
+        minimum:           60,
+        oneSecond:         100,
+        thinkingTime:      10,
+        numberOfQuestions: 2
+      },
+
+      utility: {
+        secondsToMinutesAndSeconds: function(seconds) {
+          var minutes = parseInt(seconds / 60);
+          seconds = seconds - (minutes * 60);
+
+          if (minutes > 0) {
+            if (seconds < 10) { seconds = '0' + seconds }
+            return minutes + ':' + seconds;
+          } else {
+            return seconds;
+          }
+        },
+
+        randInt: function(max) {
+          return Math.floor(Math.random() * Math.floor(max));
+        }
+      },
+
+      audio: {
+        synth: window.speechSynthesis,
+        say: function(text, after) {
+          var utterance = new SpeechSynthesisUtterance(text);
+          if (after) {
+            utterance.onend = after;
+          }
+          AskMe3000.audio.synth.speak(utterance);
+        },
+
+        beep: function(times, after) {
+          var context = new AudioContext();
+          var o = null;
+          var g = null;
+          var x = 1.5;
+          var type = 'sine'
+          o = context.createOscillator();
+          g = context.createGain();
+          g.gain.value = 0.7;
+          o.connect(g);
+          o.type = type;
+          g.connect(context.destination);
+          o.start(0);
+          g.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + x);
+          if (times && times > 1) {
+            setTimeout(function() {
+              AskMe3000.audio.beep(times - 1, after);
+            }, x * 250)
+          } else if (after) {
+            after();
+          }
+        }
+      },
+
+      domElements: {
+        body: function() {
+          return document.getElementsByTagName('body')[0];
+        },
+
+        askMeButton: function() {
+          return document.getElementById('ask-me');
+        }
+      },
+
+      domHelpers: {
+        setQuestionText: function(text) {
+          document.getElementById('question').innerHTML = text;
+        },
+
+        setBackgroundColor: function(color) {
+          AskMe3000.domElements.body().style.backgroundColor = color;
+        }
+      },
+
+      api: {
+        getQuestion: function() {
+          var r = new XMLHttpRequest();
+          r.open(
+            "GET",
+           AskMe3000.api.randomQuestionPath(),
+           true
+          );
+
+          r.onreadystatechange = function () {
+            if (r.readyState != 4 || r.status != 200) return;
+            window.nextQuestion = r.responseText;
+          };
+
+          r.send();
+        },
+
+        randomQuestionPath: function() {
+          return "questions/" + AskMe3000.utility.randInt(
+            AskMe3000.constants.numberOfQuestions
+          );
+        }
+      }
+    }
+
+    var countDown = function(seconds, after) {
+      document.getElementById('count-down').innerHTML = seconds;
+      if (seconds > 0) {
+        setTimeout(
+          function(){
+            countDown(seconds - 1, after)
+          },
+          AskMe3000.constants.oneSecond
+        );
+      } else {
+        setTimeout(function(){
+          document.getElementById('count-down').innerHTML = '';
+          after();
+        }, AskMe3000.constants.oneSecond);
+      }
+    }
+
+    var countUp = function(current, end, subscriber) {
+      document.getElementById('count-up').innerHTML = AskMe3000.utility.secondsToMinutesAndSeconds(current);
+      subscriber(current);
+      if (current < end) {
+        setTimeout(
+          function(){ countUp(current + 1, end, subscriber) },
+          AskMe3000.constants.oneSecond
+        )
+      }
+    }
+
+    var start = function() {
+      AskMe3000.audio.say('start');
+
+      countUp(0, AskMe3000.constants.stop, function(seconds) {
+        if (seconds === (AskMe3000.constants.minimum)) {
+          AskMe3000.domHelpers.setBackgroundColor('#6dbf63');
+          AskMe3000.audio.beep(1);
+        } else if (seconds == (AskMe3000.constants.great)) {
+          AskMe3000.domHelpers.setBackgroundColor('#e6af4b');
+          AskMe3000.audio.beep(2);
+        } else if (seconds == (AskMe3000.constants.stop)) {
+          AskMe3000.domHelpers.setBackgroundColor('#e05038');
+          AskMe3000.audio.say('stop');
+          setTimeout(function() {
+            AskMe3000.domHelpers.setBackgroundColor('');
+            AskMe3000.domHelpers.setQuestionText('');
+            document.getElementById('count-up').innerHTML = '';
+            AskMe3000.domElements.askMeButton().style.display = '';
+          }, 5 * AskMe3000.constants.oneSecond);
+        }
+      })
+    }
+
+    AskMe3000.api.getQuestion();
+
+    document.addEventListener('click', function (event) {
+      if (event.target.matches('#ask-me')) {
+        AskMe3000.domHelpers.setBackgroundColor('');
+        AskMe3000.domElements.askMeButton().style.display = 'none'
+        var currentQuestion = window.nextQuestion;
+        AskMe3000.api.getQuestion();
+        AskMe3000.audio.say(
+          currentQuestion,
+          function() { countDown(AskMe3000.constants.thinkingTime, start) }
+        );
+        AskMe3000.domHelpers.setQuestionText(currentQuestion);
+      }
+    }, false);
+  </script>
+</head>
+<body>
+  <div class='question' id='question'></div>
+  <div id="count-down" class='timer'></div>
+  <div id="count-up" class='timer'></div>
+  <button id='ask-me' class='button-success'>Ask me!</button>
+</body>
+</html>
