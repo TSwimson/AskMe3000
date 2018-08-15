@@ -1,5 +1,5 @@
 ## AskMe3000
-AskMe3000 is a simple tool to help you practice table topics.
+AskMe3000 is a simple tool for practicing table topics. Try it [here](https://tabletopics.app)
 
 #### How to run locally
 Clone this repository
