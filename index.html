@@ -90,6 +90,7 @@
   <script type="text/javascript">
     var AskMe3000 = {
       constants: {
+        ios:               /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream,
         stop:              120,
         great:             90,
         minimum:           60,
@@ -141,6 +142,7 @@
           var o = null;
           var g = null;
           var x = 1.5;
+          if (AskMe3000.constants.ios) { x = 0.25; }
           var type = 'sine'
           o = AskMe3000.audio.context.createOscillator();
           g = AskMe3000.audio.context.createGain();
