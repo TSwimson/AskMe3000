@@ -75,8 +75,8 @@
         stop:              120,
         great:             90,
         minimum:           60,
-        oneSecond:         1000,
-        thinkingTime:      10,
+        oneSecond:         100,
+        thinkingTime:      5,
         numberOfQuestions: 365
       },
 
@@ -100,7 +100,14 @@
 
       audio: {
         synth: window.speechSynthesis,
+        context: new AudioContext(),
+        muted: true,
         say: function(text, after) {
+          if (AskMe3000.audio.muted) {
+            if (after) { after() }
+            return;
+          }
+
           var utterance = new SpeechSynthesisUtterance(text);
           if (after) {
             utterance.onend = after;
@@ -109,25 +116,56 @@
         },
 
         beep: function(times, after) {
-          var context = new AudioContext();
+          if (AskMe3000.audio.muted) {
+            if (after) { after() }
+            return;
+          }
           var o = null;
           var g = null;
           var x = 1.5;
           var type = 'sine'
-          o = context.createOscillator();
-          g = context.createGain();
+          o = AskMe3000.audio.context.createOscillator();
+          g = AskMe3000.audio.context.createGain();
           g.gain.value = 0.7;
           o.connect(g);
           o.type = type;
-          g.connect(context.destination);
+          g.connect(AskMe3000.audio.context.destination);
           o.start(0);
-          g.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + x);
+          g.gain.exponentialRampToValueAtTime(0.00001, AskMe3000.audio.context.currentTime + x);
           if (times && times > 1) {
             setTimeout(function() {
               AskMe3000.audio.beep(times - 1, after);
             }, x * 250)
           } else if (after) {
             after();
+          }
+        },
+
+        mute: function() {
+          AskMe3000.audio.muted = true;
+        },
+
+        unmute: function() {
+          // create empty buffer
+          var buffer = AskMe3000.audio.context.createBuffer(1, 1, 22050);
+          var source = AskMe3000.audio.context.createBufferSource();
+          source.buffer = buffer;
+
+          // connect to output (your speakers)
+          source.connect(AskMe3000.audio.context.destination);
+
+          // play the file
+          if (source.noteOn) { source.noteOn(0); }
+          AskMe3000.audio.muted = false;
+        },
+
+        toggleMuteState: function() {
+          if (AskMe3000.audio.muted) {
+            AskMe3000.audio.unmute()
+            AskMe3000.domElements.muteButton().innerText = 'mute';
+          } else {
+            AskMe3000.audio.mute();
+            AskMe3000.domElements.muteButton().innerText = 'unmute';
           }
         }
       },
@@ -139,6 +177,10 @@
 
         askMeButton: function() {
           return document.getElementById('ask-me');
+        },
+
+        muteButton: function() {
+          return document.getElementById('mute');
         }
       },
 
@@ -241,6 +283,8 @@
           function() { countDown(AskMe3000.constants.thinkingTime, start) }
         );
         AskMe3000.domHelpers.setQuestionText(currentQuestion);
+      } else if (event.target.matches('#mute')) {
+        AskMe3000.audio.toggleMuteState();
       }
     }, false);
   </script>
@@ -250,6 +294,7 @@
   <div id="count-down" class='timer'></div>
   <div id="count-up" class='timer'></div>
   <button id='ask-me' class='button-success'>Ask me!</button>
+  <button id='mute' class='button-success'>unmute</button>
   <footer>
     <a href="https://github.com/TSwimson/AskMe3000" class='github-link'>GitHub</a>
   </footer>
