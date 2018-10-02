@@ -52,6 +52,19 @@
         margin: 20px;
     }
 
+    .button-small {
+      width: 35px;
+      height: 35px;
+      line-height: 0.9em;
+      padding: 0;
+    }
+
+    .button-default.button-small.mute {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+
     .button-default {
       color: #333333;
     }
@@ -67,6 +80,11 @@
     .button-success:hover {
       background: rgb(16, 115, 33);
     }
+
+    .icon {
+      width:  25px;
+      height: 25px;
+    }
   </style>
 
   <script type="text/javascript">
@@ -75,7 +93,7 @@
         stop:              120,
         great:             90,
         minimum:           60,
-        oneSecond:         100,
+        oneSecond:         1000,
         thinkingTime:      5,
         numberOfQuestions: 365
       },
@@ -130,7 +148,13 @@
           o.connect(g);
           o.type = type;
           g.connect(AskMe3000.audio.context.destination);
-          o.start(0);
+          if (o.start) {
+            o.start(0);
+          } else if (o.play) {
+            o.play(0);
+          } else if (o.noteOn) {
+            o.noteOn(0);
+          }
           g.gain.exponentialRampToValueAtTime(0.00001, AskMe3000.audio.context.currentTime + x);
           if (times && times > 1) {
             setTimeout(function() {
@@ -142,14 +166,13 @@
         },
 
         mute: function() {
-          console.log('123')
           AskMe3000.audio.muted = true;
         },
 
         unmute: function() {
-          console.log('asd')
           if (!AskMe3000.audio.context) {
-            AskMe3000.audio.context = new AudioContext();
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            AskMe3000.audio.context = new window.AudioContext();
           }
           // create empty buffer
           var buffer = AskMe3000.audio.context.createBuffer(1, 1, 22050);
@@ -160,17 +183,23 @@
           source.connect(AskMe3000.audio.context.destination);
 
           // play the file
-          //if (source.noteOn) { source.noteOn(0); }
+          if (source.start) {
+            source.start(0);
+          } else if (source.play) {
+            source.play(0);
+          } else if (source.noteOn) {
+            source.noteOn(0);
+          }
           AskMe3000.audio.muted = false;
         },
 
         toggleMuteState: function() {
           if (AskMe3000.audio.muted) {
             AskMe3000.audio.unmute()
-            AskMe3000.domElements.muteButton().innerText = 'mute';
+            AskMe3000.domElements.muteButton().innerHTML = '<img src="volume-up-solid.svg" alt="" class="icon mute"/>';
           } else {
             AskMe3000.audio.mute();
-            AskMe3000.domElements.muteButton().innerText = 'unmute';
+            AskMe3000.domElements.muteButton().innerHTML = '<img src="volume-off-solid.svg" alt="" class="icon mute"/>';
           }
         }
       },
@@ -277,6 +306,8 @@
 
     AskMe3000.api.getQuestion();
 
+    if (window.location.search == '?demo') { AskMe3000.constants.oneSecond = 100; }
+
     document.addEventListener('click', function (event) {
       if (event.target.matches('#ask-me')) {
         AskMe3000.domHelpers.setBackgroundColor('');
@@ -288,20 +319,18 @@
           function() { countDown(AskMe3000.constants.thinkingTime, start) }
         );
         AskMe3000.domHelpers.setQuestionText(currentQuestion);
-      } else if (event.target.matches('#mute')) {
+      } else if (event.target.matches('.mute')) {
         AskMe3000.audio.toggleMuteState();
       }
     }, false);
-
-    console.log('asdddd');
   </script>
 </head>
 <body>
+  <button id='mute' class='button-default button-small mute'><img src="volume-off-solid.svg" alt="" class='mute icon'/></button>
   <div class='question' id='question'>Click the button to get started!</div>
   <div id="count-down" class='timer'></div>
   <div id="count-up" class='timer'></div>
   <button id='ask-me' class='button-success'>Ask me!</button>
-  <button id='mute' class='button-success'>unmute</button>
   <footer>
     <a href="https://github.com/TSwimson/AskMe3000" class='github-link'>GitHub</a>
   </footer>
