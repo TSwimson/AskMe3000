@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Table Topics</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://jsconsole.com/js/remote.js?ac61b745-273a-4176-95a4-bbec43a4a17a"></script>
   <style>
     body {
       text-align: center;
@@ -100,7 +101,7 @@
 
       audio: {
         synth: window.speechSynthesis,
-        context: new AudioContext(),
+        context: false,
         muted: true,
         say: function(text, after) {
           if (AskMe3000.audio.muted) {
@@ -142,10 +143,15 @@
         },
 
         mute: function() {
+          console.log('123')
           AskMe3000.audio.muted = true;
         },
 
         unmute: function() {
+          console.log('asd')
+          if (!AskMe3000.audio.context) {
+            AskMe3000.audio.context = new AudioContext();
+          }
           // create empty buffer
           var buffer = AskMe3000.audio.context.createBuffer(1, 1, 22050);
           var source = AskMe3000.audio.context.createBufferSource();
@@ -287,6 +293,8 @@
         AskMe3000.audio.toggleMuteState();
       }
     }, false);
+
+    console.log('asdddd');
   </script>
 </head>
 <body>
